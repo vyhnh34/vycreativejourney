@@ -2414,8 +2414,7 @@
           <div id="pencil-hint">Pick up and draw ↑</div>
           <div
             style="position:absolute;bottom:20%;left:8%;right:8%;font-family:'Playwrite IE',cursive;font-weight:400;font-size:1.1rem;color:#7A2A2A;opacity:.85;line-height:2;text-align:center">
-            a space to think together<br>
-            <span style="opacity:.5;font-size:.50rem">powered by Gemini 2.0</span>
+            a space to think together
           </div>
           <div class="pgn c">xv</div>
         </div>
@@ -2576,7 +2575,7 @@
   <div id="confetti-stage"></div>
   <script>
     gsap.registerPlugin(MotionPathPlugin);
-    const GEMINI_KEY = 'AIzaSyABh_YO8j4RF72NqNG0bf3m0JkPgrzTBd4';
+
     const stampEl = document.querySelectorAll('.stamp-slot');
     const stampPanel = document.getElementById('stamp-panel');
     document.getElementById('stamp-header').addEventListener('click', () => {
@@ -2855,53 +2854,20 @@
       if (gi && gsub && gr) {
         gi.addEventListener('keydown', e => { if (e.key === 'Enter') gsub.click(); e.stopPropagation() });
         gi.addEventListener('click', e => e.stopPropagation());
-        gsub.addEventListener('click', async e => {
+        gsub.addEventListener('click', e => {
           e.stopPropagation();
           const q = gi.value.trim(); if (!q) return;
           gi.value = '';
 
-          // Add question
+          // Add the user's note to the organized list below
           const qDiv = document.createElement('div');
           qDiv.className = 'gem-msg gem-q';
+          qDiv.style.borderBottom = 'none'; // cleaner for simple notes
           qDiv.textContent = '→ ' + q;
           gr.appendChild(qDiv);
 
-          // Add answer placeholder
-          const aDiv = document.createElement('div');
-          aDiv.className = 'gem-msg gem-a';
-          aDiv.innerHTML = '<span style="opacity:.5">writing...</span>';
-          gr.appendChild(aDiv);
           gr.scrollTop = gr.scrollHeight;
-
-          gi.disabled = true; gsub.disabled = true;
           if (!stamp8Done) { stamp8Done = true; unlockStamp(6); }
-          try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent?alt=sse&key=${GEMINI_KEY}`, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{ role: 'user', parts: [{ text: q }] }],
-                systemInstruction: { parts: [{ text: 'You are Vy, a Vietnamese-American designer and creative. Respond with warmth and curiosity, as if writing in your personal journal. Be thoughtful and brief — 2 short paragraphs, then a sketched idea in [brackets].' }] }
-              })
-            });
-            aDiv.innerHTML = '';
-            const reader = res.body.getReader(); const dec = new TextDecoder();
-            while (true) {
-              const { done, value } = await reader.read(); if (done) break;
-              const lines = dec.decode(value).split('\n');
-              for (const ln of lines) {
-                if (!ln.startsWith('data:')) continue;
-                const d = ln.slice(5).trim(); if (d === '[DONE]') continue;
-                try {
-                  const parsed = JSON.parse(d); const t = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                  if (t) {
-                    const s = document.createElement('span'); s.textContent = t; aDiv.appendChild(s);
-                    gr.scrollTop = gr.scrollHeight;
-                  }
-                } catch (err) { }
-              }
-            }
-          } catch (err) { aDiv.textContent = '(the ink ran dry — try again)'; }
-          gi.disabled = false; gsub.disabled = false;
         });
       }
       // Envelope
